@@ -123,7 +123,12 @@
             font-style: italic;
             transition: color 0.5s;
         }
-        .dark #message {
+        #rules {
+            font-size: 16px;
+            margin: 10px 0;
+            transition: color 0.5s;
+        }
+        .dark #message, .dark #rules {
             color: #ddd;
         }
         button {
@@ -247,7 +252,8 @@
         <div id="score">Score: 0</div>
         <div id="combo">Combo: 0x</div>
         <div id="timer">Time: --</div>
-        <div id="message">Choose difficulty to start! (U, S, A)</div>
+        <div id="message"></div>
+        <div id="rules">Choose difficulty to start! (U, S, A)</div>
         <div>
             <button id="easy-btn" onclick="startGame('easy')">Easy</button>
             <button id="medium-btn" onclick="startGame('medium')">Medium</button>
@@ -291,6 +297,7 @@
         const comboDisplay = document.getElementById('combo');
         const timerDisplay = document.getElementById('timer');
         const message = document.getElementById('message');
+        const rules = document.getElementById('rules');
         const leaderboard = document.getElementById('leaderboard');
         const volumeControl = document.getElementById('volume');
         const anthemSelect = document.getElementById('anthem-select');
@@ -349,7 +356,14 @@
                     'Donald Trapes: "The best feet, believe me!"',
                     'Ilon Makes: "To Mars with that tongue!"',
                     'Donald Trapes: "A yuge licking moment!"',
-                    'Ilon Makes: "Hyperlick achieved!"'
+                    'Ilon Makes: "Hyperlick achieved!"',
+                    'Donald Trapes: "These toes taste like freedom!"',
+                    'Ilon Makes: "Feet so fine, they’re out of this world!"',
+                    'Donald Trapes: "Licking feet is winning, folks!"',
+                    'Ilon Makes: "Taste the future, one toe at a time!"',
+                    'Donald Trapes: "Golden feet, golden victory!"',
+                    'Ilon Makes: "Suck those toes to the stars!"',
+                    'Donald Trapes: "Feet licking? I’m the champ!"'
                 ],
                 combo: [
                     'Ilon Makes: "Combo king!"',
@@ -402,7 +416,14 @@
                     'Дональд Трапес: "Лучшие ноги, поверьте!"',
                     'Илон Макес: "На Марс с этим языком!"',
                     'Дональд Трапес: "Огромный момент лизания!"',
-                    'Илон Макес: "Гиперлизинг достигнут!"'
+                    'Илон Макес: "Гиперлизинг достигнут!"',
+                    'Дональд Трапес: "Эти пальцы пахнут свободой!"',
+                    'Илон Макес: "Ноги такие, что внеземные!"',
+                    'Дональд Трапес: "Лизать ступни — это победа!"',
+                    'Илон Макес: "Пробуй будущее, по одному пальцу!"',
+                    'Дональд Трапес: "Золотые ступни, золотая победа!"',
+                    'Илон Макес: "Высоси эти пальцы до звёзд!"',
+                    'Дональд Трапес: "Лизание ног? Я чемпион!"'
                 ],
                 combo: [
                     'Илон Макес: "Король комбо!"',
@@ -434,7 +455,7 @@
         const baseScene = `
         Ilon Makes on Golden Throne
           .-""""""""-.
-        .'         '.
+        .'      '.
        /   ^    ^   \\
       : ,     _    , :
        '._         _.' 
@@ -450,7 +471,7 @@
         | Left | Right |
         Donald Trapes
        .-""""""""-.
-     .'         '.
+     .'          '.
     /    o    o  \\
    : ,     ***   , :
     '._         _.' 
@@ -460,7 +481,7 @@
           .-""""""""-.
         .'        '.
        /   ^    ^   \\
-      : ,    _     , :
+      : ,    _    , :
        '._         _.' 
          '-....-' 
          /|  ||  |\\
@@ -476,15 +497,15 @@
        .-""""""""-.
      .'         '.
     /    o    o  \\
-   : ,     <~   , :
+   : ,       3~  , :
     '._         _.' 
      '-""""""""-'`;
         const pleasedScene = `
         Ilon Makes on Golden Throne
           .-""""""""-.
         .'         '.
-       /   ^    ^   \\
-      : ,    o     , :
+       /   >   <  \\
+      : ,    o   , :
        '._         _.' 
          '-....-' 
          /|  ||  |\\
@@ -500,7 +521,7 @@
        .-""""""""-.
      .'         '.
     /    o    o  \\
-   : ,     <~   , :
+   : ,      3~ , :
     '._         _.' 
      '-""""""""-'`;
 
@@ -713,10 +734,11 @@
             scoreDisplay.textContent = `${translations[lang].score}: ${score}`;
             comboDisplay.textContent = 'Combo: ' + combo + 'x';
             timerDisplay.textContent = `${translations[lang].time}: ${timeLeft}`;
-            message.textContent = translations[lang].instruction;
+            message.textContent = '';
+            rules.textContent = translations[lang].instruction;
             goalText.textContent = getRandomPhrase('coincidence');
             document.querySelectorAll('button').forEach(btn => btn.disabled = true);
-            stopBtn.disabled = false; // Активируем кнопку остановки
+            stopBtn.disabled = false;
 
             timer = setInterval(() => {
                 timeLeft--;
@@ -741,7 +763,8 @@
             document.querySelectorAll('button').forEach(btn => btn.disabled = false);
             asciiArt.textContent = baseScene;
             const lang = languageSelect.value;
-            message.textContent = translations[lang].startInstruction;
+            message.textContent = '';
+            rules.textContent = translations[lang].startInstruction;
             timerDisplay.style.color = '#b22234';
             comboDisplay.classList.remove('combo-active');
             goalText.textContent = getRandomPhrase('coincidence');
@@ -784,8 +807,9 @@
                     scoreDisplay.textContent = `${translations[lang].score}: ${score}`;
                     playChord([523.25, 659.25, 783.99], 300, 'sawtooth'); 
                     setTimeout(() => {
-                        message.textContent = translations[lang].instruction;
-                    }, 1000);
+                        message.textContent = '';
+                        rules.textContent = translations[lang].instruction;
+                    }, 3000); // Увеличено до 3 секунд
                 },
                 () => { 
                     message.textContent = translations[lang].timeBoost;
@@ -793,8 +817,9 @@
                     timerDisplay.textContent = `${translations[lang].time}: ${timeLeft}`;
                     playChord([392.00, 523.25, 659.25], 300, 'sawtooth'); 
                     setTimeout(() => {
-                        message.textContent = translations[lang].instruction;
-                    }, 1000);
+                        message.textContent = '';
+                        rules.textContent = translations[lang].instruction;
+                    }, 3000); // Увеличено до 3 секунд
                 }
             ];
             events[Math.floor(Math.random() * events.length)]();
@@ -814,7 +839,8 @@
             themeLabel.textContent = translations[lang].theme + ':';
             scoreDisplay.textContent = `${translations[lang].score}: ${score}`;
             timerDisplay.textContent = `${translations[lang].time}: --`;
-            message.textContent = translations[lang].startInstruction;
+            message.textContent = '';
+            rules.textContent = translations[lang].startInstruction;
             updateLeaderboard();
         }
 
@@ -840,7 +866,8 @@
                     setTimeout(() => {
                         asciiArt.textContent = baseScene;
                         asciiArt.style.transform = 'scale(1)';
-                        message.textContent = translations[lang].instruction;
+                        message.textContent = '';
+                        rules.textContent = translations[lang].instruction;
                     }, 200);
                 }, 200);
             } else {
@@ -853,8 +880,9 @@
                 message.textContent = getRandomPhrase('miss');
                 playChord([196.00, 246.94, 293.66], 200, 'square');
                 setTimeout(() => {
-                    message.textContent = translations[lang].instruction;
-                }, 1000);
+                    message.textContent = '';
+                    rules.textContent = translations[lang].instruction;
+                }, 3000); // Увеличено до 3 секунд
             }
             updateTrack();
         }
@@ -868,7 +896,6 @@
             setCookie('lickOfLibertyLeaders', JSON.stringify(leaders), 30);
         }
 
-        // Салют
         function launchFireworks() {
             fireworksCanvas.width = window.innerWidth;
             fireworksCanvas.height = window.innerHeight;
@@ -914,7 +941,9 @@
             updateTrack();
             document.querySelectorAll('button').forEach(btn => btn.disabled = false);
             asciiArt.textContent = baseScene;
+            const lang = languageSelect.value;
             message.textContent = won ? getRandomPhrase('win') : getRandomPhrase('lose');
+            rules.textContent = translations[lang].startInstruction;
             timerDisplay.style.color = '#b22234';
             comboDisplay.classList.remove('combo-active');
             goalText.textContent = getRandomPhrase('coincidence');

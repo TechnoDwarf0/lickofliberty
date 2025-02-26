@@ -140,6 +140,12 @@
         button:hover {
             background: #b22234;
         }
+        #stop-btn {
+            background: #b22234;
+        }
+        #stop-btn:hover {
+            background: #ff0000;
+        }
         #track {
             font-size: 16px;
             line-height: 1.4;
@@ -235,7 +241,7 @@
 <body class="light">
     <div id="game-container">
         <h1 id="title">Lick of Liberty<span class="stars">★★★★★<br>★★★★★<br>★★★★★<br>★★★★★</span></h1>
-        <p id="goal-text">All coincidences are random! Need 200 points to win!</p>
+        <p id="goal-text"></p>
         <pre id="ascii-art"></pre>
         <pre id="track"></pre>
         <div id="score">Score: 0</div>
@@ -246,6 +252,7 @@
             <button id="easy-btn" onclick="startGame('easy')">Easy</button>
             <button id="medium-btn" onclick="startGame('medium')">Medium</button>
             <button id="hard-btn" onclick="startGame('hard')">Hard</button>
+            <button id="stop-btn" onclick="stopGame()">Stop</button>
         </div>
         <div id="controls">
             <label for="volume" id="volume-label">Volume:</label>
@@ -294,6 +301,7 @@
         const easyBtn = document.getElementById('easy-btn');
         const mediumBtn = document.getElementById('medium-btn');
         const hardBtn = document.getElementById('hard-btn');
+        const stopBtn = document.getElementById('stop-btn');
         const volumeLabel = document.getElementById('volume-label');
         const anthemLabel = document.getElementById('anthem-label');
         const languageLabel = document.getElementById('language-label');
@@ -308,12 +316,11 @@
         let timer, noteTimer, eventTimer, backgroundMusic;
         let tracks = { U: [], S: [], A: [] };
         const difficultySettings = {
-            easy: { time: 30, noteSpeed: 700, noteChance: 0.3 },
-            medium: { time: 25, noteSpeed: 500, noteChance: 0.5 },
-            hard: { time: 20, noteSpeed: 300, noteChance: 0.7 }
+            easy: { time: 30, noteSpeed: 700, noteChance: 0.3, winningScore: 1000 },
+            medium: { time: 25, noteSpeed: 500, noteChance: 0.5, winningScore: 3000 },
+            hard: { time: 20, noteSpeed: 300, noteChance: 0.7, winningScore: 5000 }
         };
         let currentDifficulty = null;
-        const WINNING_SCORE = 200;
 
         const translations = {
             en: {
@@ -322,6 +329,7 @@
                 time: 'Time',
                 instruction: 'Press U, S, A when notes hit red [ ]!',
                 startInstruction: 'Choose difficulty to start! (U, S, A)',
+                stop: 'Stop',
                 easy: 'Easy',
                 medium: 'Medium',
                 hard: 'Hard',
@@ -365,7 +373,7 @@
                     'Missed!'
                 ],
                 coincidence: [
-                    'All coincidences are random! Need 200 points to win!'
+                    'All coincidences are random! Need {points} points to win!'
                 ]
             },
             ru: {
@@ -374,6 +382,7 @@
                 time: 'Время',
                 instruction: 'Нажимай U, S, A, когда ноты попадут в красные [ ]!',
                 startInstruction: 'Выбери сложность для старта! (U, S, A)',
+                stop: 'Стоп',
                 easy: 'Легко',
                 medium: 'Средне',
                 hard: 'Сложно',
@@ -417,7 +426,7 @@
                     'Промах!'
                 ],
                 coincidence: [
-                    'Все совпадения случайны! Нужно 200 очков для победы!'
+                    'Все совпадения случайны! Нужно {points} очков для победы!'
                 ]
             }
         };
@@ -425,9 +434,9 @@
         const baseScene = `
         Ilon Makes on Golden Throne
           .-""""""""-.
-        .'   ^_^   '.
-       /   o    o   \\
-      : ,          , :
+        .'         '.
+       /   ^    ^   \\
+      : ,     _    , :
        '._         _.' 
          '-....-' 
          /|  ||  |\\
@@ -441,17 +450,17 @@
         | Left | Right |
         Donald Trapes
        .-""""""""-.
-     .'    ***   '.
+     .'         '.
     /    o    o  \\
-   : ,          , :
+   : ,     ***   , :
     '._         _.' 
      '-""""""""-'`;
         const lickScene = `
         Ilon Makes on Golden Throne
           .-""""""""-.
-        .'   ^_^   '.
-       /   o    o   \\
-      : ,          , :
+        .'        '.
+       /   ^    ^   \\
+      : ,    _     , :
        '._         _.' 
          '-....-' 
          /|  ||  |\\
@@ -465,17 +474,17 @@
         | Left | Right |
         Donald Trapes
        .-""""""""-.
-     .'   ~>    '.
+     .'         '.
     /    o    o  \\
-   : ,          , :
+   : ,     <~   , :
     '._         _.' 
      '-""""""""-'`;
         const pleasedScene = `
         Ilon Makes on Golden Throne
           .-""""""""-.
-        .'   ^o^   '.
-       /   o    o   \\
-      : ,          , :
+        .'         '.
+       /   ^    ^   \\
+      : ,    o     , :
        '._         _.' 
          '-....-' 
          /|  ||  |\\
@@ -489,9 +498,9 @@
         | Left | Right |
         Donald Trapes
        .-""""""""-.
-     .'   ~>    '.
+     .'         '.
     /    o    o  \\
-   : ,          , :
+   : ,     <~   , :
     '._         _.' 
      '-""""""""-'`;
 
@@ -528,7 +537,11 @@
                 return lang === 'en' ? 'Error: No phrases available' : 'Ошибка: Фразы отсутствуют';
             }
             const randomIndex = Math.floor(Math.random() * phraseArray.length);
-            return phraseArray[randomIndex];
+            let phrase = phraseArray[randomIndex];
+            if (category === 'coincidence' && currentDifficulty) {
+                phrase = phrase.replace('{points}', difficultySettings[currentDifficulty].winningScore);
+            }
+            return phrase;
         }
 
         // Web Audio API
@@ -701,18 +714,37 @@
             comboDisplay.textContent = 'Combo: ' + combo + 'x';
             timerDisplay.textContent = `${translations[lang].time}: ${timeLeft}`;
             message.textContent = translations[lang].instruction;
+            goalText.textContent = getRandomPhrase('coincidence');
             document.querySelectorAll('button').forEach(btn => btn.disabled = true);
+            stopBtn.disabled = false; // Активируем кнопку остановки
 
             timer = setInterval(() => {
                 timeLeft--;
                 timerDisplay.textContent = `${translations[lang].time}: ${timeLeft}`;
                 if (timeLeft <= 5) timerDisplay.style.color = '#ff0000';
-                if (timeLeft <= 0) endGame(score >= WINNING_SCORE);
+                if (timeLeft <= 0) endGame(score >= difficultySettings[difficulty].winningScore);
             }, 1000);
 
             noteTimer = setInterval(addNotes, difficultySettings[difficulty].noteSpeed);
             eventTimer = setInterval(randomEvent, 10000);
             updateTrack();
+        }
+
+        function stopGame() {
+            if (!gameActive) return;
+            clearInterval(timer);
+            clearInterval(noteTimer);
+            clearInterval(eventTimer);
+            gameActive = false;
+            tracks = { U: [], S: [], A: [] };
+            updateTrack();
+            document.querySelectorAll('button').forEach(btn => btn.disabled = false);
+            asciiArt.textContent = baseScene;
+            const lang = languageSelect.value;
+            message.textContent = translations[lang].startInstruction;
+            timerDisplay.style.color = '#b22234';
+            comboDisplay.classList.remove('combo-active');
+            goalText.textContent = getRandomPhrase('coincidence');
         }
 
         function addNotes() {
@@ -771,10 +803,11 @@
         function updateLanguage() {
             const lang = languageSelect.value;
             title.textContent = translations[lang].title;
-            goalText.textContent = getRandomPhrase('coincidence');
+            goalText.textContent = currentDifficulty ? getRandomPhrase('coincidence') : getRandomPhrase('coincidence').replace('{points}', difficultySettings['easy'].winningScore);
             easyBtn.textContent = translations[lang].easy;
             mediumBtn.textContent = translations[lang].medium;
             hardBtn.textContent = translations[lang].hard;
+            stopBtn.textContent = translations[lang].stop;
             volumeLabel.textContent = translations[lang].volume + ':';
             anthemLabel.textContent = translations[lang].anthem + ':';
             languageLabel.textContent = translations[lang].language + ':';
@@ -884,6 +917,7 @@
             message.textContent = won ? getRandomPhrase('win') : getRandomPhrase('lose');
             timerDisplay.style.color = '#b22234';
             comboDisplay.classList.remove('combo-active');
+            goalText.textContent = getRandomPhrase('coincidence');
 
             if (won && score > leaders[leaders.length - 1].score) {
                 const lang = languageSelect.value;
@@ -901,6 +935,8 @@
             if (e.key === 's' || e.key === 'S') checkHit('S');
             if (e.key === 'a' || e.key === 'A') checkHit('A');
         });
+
+        updateLanguage(); // Инициализация языка при загрузке
     </script>
 </body>
 </html>

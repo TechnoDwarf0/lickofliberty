@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lick of Liberty</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: monospace;
+            overflow: hidden;
+            transition: background 0.5s;
+        }
+        body.light {
+            background: linear-gradient(to bottom, #003087, #ffffff, #b22234);
+        }
+        body.dark {
+            background: linear-gradient(to bottom, #001f5f, #333333, #8b0000);
+        }
+        #game-container {
+            text-align: center;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            position: relative;
+            transition: background 0.5s, color 0.5s;
+        }
+        .light #game-container {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+        .dark #game-container {
+            background: rgba(0, 0, 0, 0.9);
+            color: #ddd;
+        }
+        h1 {
+            position: relative;
+            z-index: 1;
+            display: inline-block;
+            padding: 15px 25px;
+            color: white;
+            font-size: 40px;
+            margin: 0;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.7);
+        }
+        h1::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #003087;
+            z-index: -1;
+            border-radius: 5px;
+        }
+        h1::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                to bottom,
+                #b22234 0%, #b22234 7.7%,
+                #ffffff 7.7%, #ffffff 15.4%,
+                #b22234 15.4%, #b22234 23.1%,
+                #ffffff 23.1%, #ffffff 30.8%,
+                #b22234 30.8%, #b22234 38.5%,
+                #ffffff 38.5%, #ffffff 46.2%,
+                #b22234 46.2%, #b22234 53.8%,
+                #ffffff 53.8%, #ffffff 61.5%,
+                #b22234 61.5%, #b22234 69.2%,
+                #ffffff 69.2%, #ffffff 76.9%,
+                #b22234 76.9%, #b22234 84.6%,
+                #ffffff 84.6%, #ffffff 92.3%,
+                #b22234 92.3%, #b22234 100%
+            );
+            z-index: -1;
+            clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%);
+        }
+        .stars {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 50%;
+            height: 100%;
+            color: white;
+            font-size: 14px;
+            letter-spacing: 6px;
+            z-index: 0;
+            text-align: left;
+            line-height: 1.2;
+        }
+        #ascii-art {
+            font-size: 12px;
+            line-height: 0.9;
+            white-space: pre;
+            margin: 20px auto;
+            transition: transform 0.2s;
+        }
+        #score, #timer, #combo {
+            font-size: 28px;
+            margin: 10px 0;
+            font-weight: bold;
+            transition: color 0.5s;
+        }
+        .dark #score, .dark #timer, .dark #combo {
+            color: #ddd;
+        }
+        #timer {
+            color: #b22234;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+        #message {
+            font-size: 20px;
+            margin: 10px 0;
+            font-style: italic;
+            transition: color 0.5s;
+        }
+        .dark #message {
+            color: #ddd;
+        }
+        button {
+            padding: 12px 25px;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 5px;
+            background: #003087;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #b22234;
+        }
+        #track {
+            font-size: 16px;
+            line-height: 1.4;
+            white-space: pre;
+            margin: 20px auto;
+            padding: 10px;
+            border-radius: 5px;
+            transition: background 0.5s;
+        }
+        .light #track {
+            background: rgba(0,0,0,0.1);
+        }
+        .dark #track {
+            background: rgba(255,255,255,0.1);
+        }
+        .hit-zone {
+            display: inline;
+            transition: transform 0.2s;
+        }
+        .active {
+            color: red;
+            transform: scale(1.2);
+        }
+        .combo-active {
+            color: gold;
+            text-shadow: 0 0 5px gold;
+        }
+        #leaderboard {
+            margin-top: 20px;
+            font-size: 18px;
+            max-height: 150px;
+            overflow-y: auto;
+            transition: color 0.5s;
+        }
+        .dark #leaderboard {
+            color: #ddd;
+        }
+        #leaderboard table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #leaderboard th, #leaderboard td {
+            padding: 8px;
+            border: 1px solid #333;
+        }
+        #leaderboard th {
+            background: #003087;
+            color: white;
+        }
+        #controls {
+            margin: 10px 0;
+        }
+        #controls label {
+            font-size: 16px;
+            margin-right: 10px;
+            transition: color 0.5s;
+        }
+        .dark #controls label {
+            color: #ddd;
+        }
+        #volume, #anthem-select, #language-select, #theme-select {
+            vertical-align: middle;
+        }
+        #volume {
+            width: 100px;
+            background: linear-gradient(to right, #ccc 0%, #003087 100%);
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #volume::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #b22234;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        #volume::-webkit-slider-thumb:hover {
+            background: #ff0000;
+        }
+        #fireworks {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body class="light">
+    <div id="game-container">
+        <h1 id="title">Lick of Liberty<span class="stars">★★★★★<br>★★★★★<br>★★★★★<br>★★★★★</span></h1>
+        <p id="goal-text">All coincidences are random! Need 200 points to win!</p>
+        <pre id="ascii-art"></pre>
+        <pre id="track"></pre>
+        <div id="score">Score: 0</div>
+        <div id="combo">Combo: 0x</div>
+        <div id="timer">Time: --</div>
+        <div id="message">Choose difficulty to start! (U, S, A)</div>
+        <div>
+            <button id="easy-btn" onclick="startGame('easy')">Easy</button>
+            <button id="medium-btn" onclick="startGame('medium')">Medium</button>
+            <button id="hard-btn" onclick="startGame('hard')">Hard</button>
+        </div>
+        <div id="controls">
+            <label for="volume" id="volume-label">Volume:</label>
+            <input type="range" id="volume" min="0" max="1" step="0.01" value="0.033">
+            <label for="anthem-select" id="anthem-label">Anthem:</label>
+            <select id="anthem-select">
+                <option value="usa">Star-Spangled Banner (USA)</option>
+                <option value="california">Sweet California</option>
+                <option value="texas">Texas, Our Texas</option>
+                <option value="newyork">Sweet Home New York</option>
+                <option value="florida">My Florida</option>
+                <option value="alaska">Alaska's Flag</option>
+                <option value="hawaii">Hawaiʻi Ponoʻī</option>
+                <option value="georgia">Sweet Georgia Brown</option>
+                <option value="illinois">Illinois</option>
+            </select>
+            <label for="language-select" id="language-label">Language:</label>
+            <select id="language-select">
+                <option value="en">English</option>
+                <option value="ru">Русский</option>
+            </select>
+            <label for="theme-select" id="theme-label">Theme:</label>
+            <select id="theme-select">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+            </select>
+        </div>
+        <div id="leaderboard"></div>
+    </div>
+    <canvas id="fireworks"></canvas>
+
+    <script>
+        const asciiArt = document.getElementById('ascii-art');
+        const track = document.getElementById('track');
+        const scoreDisplay = document.getElementById('score');
+        const comboDisplay = document.getElementById('combo');
+        const timerDisplay = document.getElementById('timer');
+        const message = document.getElementById('message');
+        const leaderboard = document.getElementById('leaderboard');
+        const volumeControl = document.getElementById('volume');
+        const anthemSelect = document.getElementById('anthem-select');
+        const languageSelect = document.getElementById('language-select');
+        const themeSelect = document.getElementById('theme-select');
+        const title = document.getElementById('title');
+        const goalText = document.getElementById('goal-text');
+        const easyBtn = document.getElementById('easy-btn');
+        const mediumBtn = document.getElementById('medium-btn');
+        const hardBtn = document.getElementById('hard-btn');
+        const volumeLabel = document.getElementById('volume-label');
+        const anthemLabel = document.getElementById('anthem-label');
+        const languageLabel = document.getElementById('language-label');
+        const themeLabel = document.getElementById('theme-label');
+        const fireworksCanvas = document.getElementById('fireworks');
+        const ctx = fireworksCanvas.getContext('2d');
+
+        let score = 0;
+        let combo = 0;
+        let timeLeft = 0;
+        let gameActive = false;
+        let timer, noteTimer, eventTimer, backgroundMusic;
+        let tracks = { U: [], S: [], A: [] };
+        const difficultySettings = {
+            easy: { time: 30, noteSpeed: 700, noteChance: 0.3 },
+            medium: { time: 25, noteSpeed: 500, noteChance: 0.5 },
+            hard: { time: 20, noteSpeed: 300, noteChance: 0.7 }
+        };
+        let currentDifficulty = null;
+        const WINNING_SCORE = 200;
+
+        const translations = {
+            en: {
+                title: 'Lick of Liberty',
+                score: 'Score',
+                time: 'Time',
+                instruction: 'Press U, S, A when notes hit red [ ]!',
+                startInstruction: 'Choose difficulty to start! (U, S, A)',
+                easy: 'Easy',
+                medium: 'Medium',
+                hard: 'Hard',
+                volume: 'Volume',
+                anthem: 'Anthem',
+                language: 'Language',
+                theme: 'Theme',
+                leaderboard: 'Leaderboard',
+                name: 'Name',
+                doublePoints: 'Double Points!',
+                timeBoost: 'Time Boost!',
+                lick: [
+                    'Donald Trapes: "This is tremendous, folks!"',
+                    'Ilon Makes: "Lick harder, it’s for science!"',
+                    'Donald Trapes: "Nobody licks better than me!"',
+                    'Ilon Makes: "This is next-level innovation!"',
+                    'Donald Trapes: "The best feet, believe me!"',
+                    'Ilon Makes: "To Mars with that tongue!"',
+                    'Donald Trapes: "A yuge licking moment!"',
+                    'Ilon Makes: "Hyperlick achieved!"'
+                ],
+                combo: [
+                    'Ilon Makes: "Combo king!"',
+                    'Donald Trapes: "Yuge combo, believe me!"',
+                    'Ilon Makes: "You’re unstoppable!"',
+                    'Donald Trapes: "Winning streak, folks!"'
+                ],
+                win: [
+                    'Ilon Makes: "You’re the best licker, Trapes!"',
+                    'Donald Trapes: "I’ve won, bigly, believe me!"',
+                    'Ilon Makes: "Feet salute you!"',
+                    'Donald Trapes: "Greatest victory ever!"'
+                ],
+                lose: [
+                    'Ilon Makes: "Pathetic effort, Trapes!"',
+                    'Donald Trapes: "Rigged! The timer’s fake!"',
+                    'Ilon Makes: "Feet reject you!"',
+                    'Donald Trapes: "I was robbed, folks!"'
+                ],
+                miss: [
+                    'Missed!'
+                ],
+                coincidence: [
+                    'All coincidences are random! Need 200 points to win!'
+                ]
+            },
+            ru: {
+                title: 'Лизание Свободы',
+                score: 'Очки',
+                time: 'Время',
+                instruction: 'Нажимай U, S, A, когда ноты попадут в красные [ ]!',
+                startInstruction: 'Выбери сложность для старта! (U, S, A)',
+                easy: 'Легко',
+                medium: 'Средне',
+                hard: 'Сложно',
+                volume: 'Громкость',
+                anthem: 'Гимн',
+                language: 'Язык',
+                theme: 'Тема',
+                leaderboard: 'Таблица лидеров',
+                name: 'Имя',
+                doublePoints: 'Двойные очки!',
+                timeBoost: 'Бонус времени!',
+                lick: [
+                    'Дональд Трапес: "Это потрясающе, ребята!"',
+                    'Илон Макес: "Лижи сильнее, это наука!"',
+                    'Дональд Трапес: "Никто не лижет лучше меня!"',
+                    'Илон Макес: "Это инновация следующего уровня!"',
+                    'Дональд Трапес: "Лучшие ноги, поверьте!"',
+                    'Илон Макес: "На Марс с этим языком!"',
+                    'Дональд Трапес: "Огромный момент лизания!"',
+                    'Илон Макес: "Гиперлизинг достигнут!"'
+                ],
+                combo: [
+                    'Илон Макес: "Король комбо!"',
+                    'Дональд Трапес: "Огромное комбо, поверьте!"',
+                    'Илон Макес: "Ты неудержим!"',
+                    'Дональд Трапес: "Серия побед, ребята!"'
+                ],
+                win: [
+                    'Илон Макес: "Ты лучший лизач, Трапес!"',
+                    'Дональд Трапес: "Я победил, грандиозно!"',
+                    'Илон Макес: "Ноги салютуют тебе!"',
+                    'Дональд Трапес: "Величайшая победа!"'
+                ],
+                lose: [
+                    'Илон Макес: "Жалкая попытка, Трапес!"',
+                    'Дональд Трапес: "Подтасовано! Таймер фальшивый!"',
+                    'Илон Макес: "Ноги тебя отвергли!"',
+                    'Дональд Трапес: "Меня обокрали, ребята!"'
+                ],
+                miss: [
+                    'Промах!'
+                ],
+                coincidence: [
+                    'Все совпадения случайны! Нужно 200 очков для победы!'
+                ]
+            }
+        };
+
+        const baseScene = `
+        Ilon Makes on Golden Throne
+          .-""""""""-.
+        .'   ^_^   '.
+       /   o    o   \\
+      : ,          , :
+       '._         _.' 
+         '-....-' 
+         /|  ||  |\\
+        / |  ||  | \\
+       /  |  ||  |  \\
+      /___|______|___\\
+      |  GOLDEN THRONE  |
+      |_________________|
+         .'~^~^~^~'.
+        /__________\\
+        | Left | Right |
+        Donald Trapes
+       .-""""""""-.
+     .'    ***   '.
+    /    o    o  \\
+   : ,          , :
+    '._         _.' 
+     '-""""""""-'`;
+        const lickScene = `
+        Ilon Makes on Golden Throne
+          .-""""""""-.
+        .'   ^_^   '.
+       /   o    o   \\
+      : ,          , :
+       '._         _.' 
+         '-....-' 
+         /|  ||  |\\
+        / |  ||  | \\
+       /  |  ||  |  \\
+      /___|______|___\\
+      |  GOLDEN THRONE  |
+      |_________________|
+         .'~>~^~^~'.
+        /__________\\
+        | Left | Right |
+        Donald Trapes
+       .-""""""""-.
+     .'   ~>    '.
+    /    o    o  \\
+   : ,          , :
+    '._         _.' 
+     '-""""""""-'`;
+        const pleasedScene = `
+        Ilon Makes on Golden Throne
+          .-""""""""-.
+        .'   ^o^   '.
+       /   o    o   \\
+      : ,          , :
+       '._         _.' 
+         '-....-' 
+         /|  ||  |\\
+        / |  ||  | \\
+       /  |  ||  |  \\
+      /___|______|___\\
+      |  GOLDEN THRONE  |
+      |_________________|
+         .'~>~^~^~'.
+        /__________\\
+        | Left | Right |
+        Donald Trapes
+       .-""""""""-.
+     .'   ~>    '.
+    /    o    o  \\
+   : ,          , :
+    '._         _.' 
+     '-""""""""-'`;
+
+        asciiArt.textContent = baseScene;
+
+        // Cookies
+        function setCookie(name, value, days) {
+            const expires = new Date(Date.now() + days * 864e5).toUTCString();
+            document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+        }
+        function getCookie(name) {
+            const matches = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+            return matches ? decodeURIComponent(matches[1]) : null;
+        }
+
+        // Загрузка данных из cookies
+        let leaders = JSON.parse(getCookie('lickOfLibertyLeaders')) || [
+            { name: 'Trapes', score: 150 },
+            { name: 'Makes', score: 120 },
+            { name: 'Anon', score: 100 }
+        ];
+        volumeControl.value = getCookie('lickOfLibertyVolume') || 0.033;
+        anthemSelect.value = getCookie('lickOfLibertyAnthem') || 'usa';
+        languageSelect.value = getCookie('lickOfLibertyLanguage') || 'en';
+        themeSelect.value = getCookie('lickOfLibertyTheme') || 'light';
+        document.body.className = themeSelect.value;
+        updateLeaderboard();
+        updateLanguage();
+
+        function getRandomPhrase(category) {
+            const lang = languageSelect.value;
+            const phraseArray = translations[lang][category];
+            if (!phraseArray || phraseArray.length === 0) {
+                return lang === 'en' ? 'Error: No phrases available' : 'Ошибка: Фразы отсутствуют';
+            }
+            const randomIndex = Math.floor(Math.random() * phraseArray.length);
+            return phraseArray[randomIndex];
+        }
+
+        // Web Audio API
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const gainNode = audioCtx.createGain();
+        gainNode.connect(audioCtx.destination);
+        gainNode.gain.value = volumeControl.value;
+
+        volumeControl.addEventListener('input', () => {
+            gainNode.gain.value = volumeControl.value;
+            setCookie('lickOfLibertyVolume', volumeControl.value, 30);
+        });
+
+        anthemSelect.addEventListener('change', () => {
+            setCookie('lickOfLibertyAnthem', anthemSelect.value, 30);
+            stopBackgroundMusic();
+            startBackgroundMusic();
+        });
+
+        languageSelect.addEventListener('change', () => {
+            setCookie('lickOfLibertyLanguage', languageSelect.value, 30);
+            updateLanguage();
+        });
+
+        themeSelect.addEventListener('change', () => {
+            document.body.className = themeSelect.value;
+            setCookie('lickOfLibertyTheme', themeSelect.value, 30);
+        });
+
+        function playChord(frequencies, duration, type = 'sine', vibrato = false) {
+            frequencies.forEach(freq => {
+                const osc = audioCtx.createOscillator();
+                osc.type = type;
+                osc.frequency.value = freq;
+                if (vibrato) {
+                    const lfo = audioCtx.createOscillator();
+                    lfo.frequency.value = 5;
+                    const lfoGain = audioCtx.createGain();
+                    lfoGain.gain.value = 10;
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(osc.frequency);
+                    lfo.start();
+                    setTimeout(() => lfo.stop(), duration);
+                }
+                osc.connect(gainNode);
+                osc.start();
+                setTimeout(() => osc.stop(), duration);
+            });
+        }
+
+        const anthems = {
+            usa: [
+                { freqs: [261.63, 392.00, 523.25], dur: 600, vibrato: true },
+                { freqs: [196.00, 293.66], dur: 400 },
+                { freqs: [220.00, 329.63, 440.00], dur: 600 },
+                { freqs: [261.63, 392.00], dur: 400 },
+                { freqs: [329.63, 493.88, 659.25], dur: 900, vibrato: true },
+                { freqs: [261.63, 392.00], dur: 300 },
+                { freqs: [293.66, 440.00, 587.33], dur: 600 },
+                { freqs: [261.63, 392.00], dur: 400 },
+                { freqs: [196.00, 293.66], dur: 600 },
+                { freqs: [220.00, 329.63, 440.00], dur: 1200, vibrato: true },
+                { freqs: [261.63, 392.00], dur: 600 },
+                { freqs: [329.63, 493.88], dur: 400 },
+                { freqs: [392.00, 523.25, 659.25], dur: 900, vibrato: true },
+                { freqs: [349.23, 523.25], dur: 600 },
+                { freqs: [329.63, 493.88], dur: 400 },
+                { freqs: [293.66, 440.00], dur: 1200, vibrato: true }
+            ],
+            california: [
+                { freqs: [392.00, 523.25, 659.25], dur: 600 },
+                { freqs: [349.23, 523.25], dur: 400 },
+                { freqs: [329.63, 493.88, 659.25], dur: 600, vibrato: true },
+                { freqs: [261.63, 392.00], dur: 400 },
+                { freqs: [293.66, 440.00, 587.33], dur: 900 },
+                { freqs: [329.63, 493.88], dur: 300 },
+                { freqs: [392.00, 523.25, 659.25], dur: 600, vibrato: true }
+            ],
+            texas: [
+                { freqs: [261.63, 392.00, 523.25], dur: 600 },
+                { freqs: [329.63, 493.88], dur: 400 },
+                { freqs: [392.00, 523.25, 659.25], dur: 600, vibrato: true },
+                { freqs: [440.00, 659.25], dur: 900 },
+                { freqs: [392.00, 523.25], dur: 300 },
+                { freqs: [329.63, 493.88, 659.25], dur: 600 },
+                { freqs: [261.63, 392.00, 523.25], dur: 600, vibrato: true }
+            ],
+            newyork: [
+                { freqs: [293.66, 440.00, 587.33], dur: 600 },
+                { freqs: [329.63, 493.88], dur: 400 },
+                { freqs: [349.23, 523.25, 659.25], dur: 600, vibrato: true },
+                { freqs: [392.00, 587.33], dur: 900 },
+                { freqs: [349.23, 523.25], dur: 300 },
+                { freqs: [329.63, 493.88, 659.25], dur: 600 },
+                { freqs: [293.66, 440.00, 587.33], dur: 600, vibrato: true }
+            ],
+            florida: [
+                { freqs: [293.66, 440.00, 587.33], dur: 600 },
+                { freqs: [329.63, 493.88], dur: 400 },
+                { freqs: [392.00, 587.33, 783.99], dur: 600, vibrato: true },
+                { freqs: [349.23, 523.25], dur: 900 },
+                { freqs: [293.66, 440.00], dur: 300 },
+                { freqs: [261.63, 392.00, 523.25], dur: 600 },
+                { freqs: [293.66, 440.00, 587.33], dur: 600, vibrato: true }
+            ],
+            alaska: [
+                { freqs: [261.63, 392.00, 523.25], dur: 600 },
+                { freqs: [329.63, 493.88], dur: 400 },
+                { freqs: [349.23, 523.25, 659.25], dur: 600, vibrato: true },
+                { freqs: [392.00, 587.33], dur: 900 },
+                { freqs: [349.23, 523.25], dur: 300 },
+                { freqs: [329.63, 493.88, 659.25], dur: 600 },
+                { freqs: [261.63, 392.00, 523.25], dur: 600, vibrato: true }
+            ],
+            hawaii: [
+                { freqs: [261.63, 392.00, 523.25], dur: 600 },
+                { freqs: [293.66, 440.00], dur: 400 },
+                { freqs: [329.63, 493.88, 659.25], dur: 600, vibrato: true },
+                { freqs: [349.23, 523.25], dur: 900 },
+                { freqs: [392.00, 587.33], dur: 300 },
+                { freqs: [440.00, 659.25], dur: 600 },
+                { freqs: [392.00, 523.25], dur: 600, vibrato: true }
+            ],
+            georgia: [
+                { freqs: [293.66, 440.00, 587.33], dur: 600 },
+                { freqs: [329.63, 493.88], dur: 400 },
+                { freqs: [349.23, 523.25, 659.25], dur: 600, vibrato: true },
+                { freqs: [392.00, 587.33], dur: 900 },
+                { freqs: [440.00, 659.25], dur: 300 },
+                { freqs: [392.00, 523.25], dur: 600 },
+                { freqs: [349.23, 523.25], dur: 600, vibrato: true }
+            ],
+            illinois: [
+                { freqs: [261.63, 392.00, 523.25], dur: 600 },
+                { freqs: [293.66, 440.00], dur: 400 },
+                { freqs: [329.63, 493.88, 659.25], dur: 600, vibrato: true },
+                { freqs: [349.23, 523.25], dur: 900 },
+                { freqs: [392.00, 587.33], dur: 300 },
+                { freqs: [440.00, 659.25], dur: 600 },
+                { freqs: [392.00, 523.25], dur: 600, vibrato: true }
+            ]
+        };
+
+        function startBackgroundMusic() {
+            const selectedAnthem = anthems[anthemSelect.value];
+            let noteIndex = 0;
+            backgroundMusic = setInterval(() => {
+                const note = selectedAnthem[noteIndex % selectedAnthem.length];
+                playChord(note.freqs, note.dur - 50, 'sine', note.vibrato);
+                noteIndex++;
+            }, selectedAnthem[noteIndex % selectedAnthem.length].dur);
+        }
+
+        function stopBackgroundMusic() {
+            clearInterval(backgroundMusic);
+        }
+
+        startBackgroundMusic();
+
+        function startGame(difficulty) {
+            if (gameActive) return;
+            gameActive = true;
+            currentDifficulty = difficulty;
+            score = 0;
+            combo = 0;
+            timeLeft = difficultySettings[difficulty].time;
+            tracks = { U: [], S: [], A: [] };
+            const lang = languageSelect.value;
+            scoreDisplay.textContent = `${translations[lang].score}: ${score}`;
+            comboDisplay.textContent = 'Combo: ' + combo + 'x';
+            timerDisplay.textContent = `${translations[lang].time}: ${timeLeft}`;
+            message.textContent = translations[lang].instruction;
+            document.querySelectorAll('button').forEach(btn => btn.disabled = true);
+
+            timer = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = `${translations[lang].time}: ${timeLeft}`;
+                if (timeLeft <= 5) timerDisplay.style.color = '#ff0000';
+                if (timeLeft <= 0) endGame(score >= WINNING_SCORE);
+            }, 1000);
+
+            noteTimer = setInterval(addNotes, difficultySettings[difficulty].noteSpeed);
+            eventTimer = setInterval(randomEvent, 10000);
+            updateTrack();
+        }
+
+        function addNotes() {
+            if (!gameActive) return;
+            const noteChance = difficultySettings[currentDifficulty].noteChance;
+            ['U', 'S', 'A'].forEach(key => {
+                if (Math.random() < noteChance) tracks[key].unshift(key);
+                else tracks[key].unshift(' ');
+                if (tracks[key].length > 10) tracks[key].pop();
+            });
+            updateTrack();
+        }
+
+        function updateTrack() {
+            let trackString = '';
+            for (let i = 0; i < 10; i++) {
+                trackString += (i < tracks.U.length ? tracks.U[i] : ' ') + ' ';
+            }
+            trackString += `<span class="hit-zone${tracks.U[tracks.U.length - 1] === 'U' ? ' active' : ''}">[U]</span>\n`;
+            for (let i = 0; i < 10; i++) {
+                trackString += (i < tracks.S.length ? tracks.S[i] : ' ') + ' ';
+            }
+            trackString += `<span class="hit-zone${tracks.S[tracks.S.length - 1] === 'S' ? ' active' : ''}">[S]</span>\n`;
+            for (let i = 0; i < 10; i++) {
+                trackString += (i < tracks.A.length ? tracks.A[i] : ' ') + ' ';
+            }
+            trackString += `<span class="hit-zone${tracks.A[tracks.A.length - 1] === 'A' ? ' active' : ''}">[A]</span>`;
+            track.innerHTML = trackString;
+        }
+
+        function randomEvent() {
+            const lang = languageSelect.value;
+            const events = [
+                () => { 
+                    message.textContent = translations[lang].doublePoints;
+                    score *= 2; 
+                    scoreDisplay.textContent = `${translations[lang].score}: ${score}`;
+                    playChord([523.25, 659.25, 783.99], 300, 'sawtooth'); 
+                    setTimeout(() => {
+                        message.textContent = translations[lang].instruction;
+                    }, 1000);
+                },
+                () => { 
+                    message.textContent = translations[lang].timeBoost;
+                    timeLeft += 5; 
+                    timerDisplay.textContent = `${translations[lang].time}: ${timeLeft}`;
+                    playChord([392.00, 523.25, 659.25], 300, 'sawtooth'); 
+                    setTimeout(() => {
+                        message.textContent = translations[lang].instruction;
+                    }, 1000);
+                }
+            ];
+            events[Math.floor(Math.random() * events.length)]();
+        }
+
+        function updateLanguage() {
+            const lang = languageSelect.value;
+            title.textContent = translations[lang].title;
+            goalText.textContent = getRandomPhrase('coincidence');
+            easyBtn.textContent = translations[lang].easy;
+            mediumBtn.textContent = translations[lang].medium;
+            hardBtn.textContent = translations[lang].hard;
+            volumeLabel.textContent = translations[lang].volume + ':';
+            anthemLabel.textContent = translations[lang].anthem + ':';
+            languageLabel.textContent = translations[lang].language + ':';
+            themeLabel.textContent = translations[lang].theme + ':';
+            scoreDisplay.textContent = `${translations[lang].score}: ${score}`;
+            timerDisplay.textContent = `${translations[lang].time}: --`;
+            message.textContent = translations[lang].startInstruction;
+            updateLeaderboard();
+        }
+
+        function checkHit(key) {
+            if (!gameActive) return;
+            const lang = languageSelect.value;
+            const hitZone = tracks[key][tracks[key].length - 1];
+            if (hitZone === key) {
+                combo++;
+                let basePoints = 15;
+                if (combo >= 5) basePoints *= 2;
+                score += basePoints;
+                scoreDisplay.textContent = `${translations[lang].score}: ${score}`;
+                comboDisplay.textContent = 'Combo: ' + combo + 'x';
+                if (combo >= 5) comboDisplay.classList.add('combo-active');
+                tracks[key][tracks[key].length - 1] = ' ';
+                message.textContent = combo >= 5 ? getRandomPhrase('combo') : getRandomPhrase('lick');
+                playChord([261.63 + combo * 20, 392.00 + combo * 20, 523.25 + combo * 20], 200, 'sawtooth', true);
+                asciiArt.style.transform = 'scale(1.05)';
+                asciiArt.textContent = lickScene;
+                setTimeout(() => {
+                    asciiArt.textContent = pleasedScene;
+                    setTimeout(() => {
+                        asciiArt.textContent = baseScene;
+                        asciiArt.style.transform = 'scale(1)';
+                        message.textContent = translations[lang].instruction;
+                    }, 200);
+                }, 200);
+            } else {
+                combo = 0;
+                score -= 10;
+                if (score < 0) score = 0;
+                scoreDisplay.textContent = `${translations[lang].score}: ${score}`;
+                comboDisplay.textContent = 'Combo: ' + combo + 'x';
+                comboDisplay.classList.remove('combo-active');
+                message.textContent = getRandomPhrase('miss');
+                playChord([196.00, 246.94, 293.66], 200, 'square');
+                setTimeout(() => {
+                    message.textContent = translations[lang].instruction;
+                }, 1000);
+            }
+            updateTrack();
+        }
+
+        function updateLeaderboard() {
+            const lang = languageSelect.value;
+            leaders.sort((a, b) => b.score - a.score);
+            leaderboard.innerHTML = `<h3>${translations[lang].leaderboard}</h3><table><tr><th>${translations[lang].name}</th><th>${translations[lang].score}</th></tr>` +
+                leaders.slice(0, 10).map(l => `<tr><td>${l.name}</td><td>${l.score}</td></tr>`).join('') +
+                '</table>';
+            setCookie('lickOfLibertyLeaders', JSON.stringify(leaders), 30);
+        }
+
+        // Салют
+        function launchFireworks() {
+            fireworksCanvas.width = window.innerWidth;
+            fireworksCanvas.height = window.innerHeight;
+            const particles = [];
+            const colors = ['#003087', '#b22234', '#ffffff'];
+
+            for (let i = 0; i < 50; i++) {
+                particles.push({
+                    x: Math.random() * fireworksCanvas.width,
+                    y: fireworksCanvas.height,
+                    vx: Math.random() * 4 - 2,
+                    vy: Math.random() * -10 - 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    size: Math.random() * 5 + 2,
+                    life: Math.random() * 60 + 30
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, fireworksCanvas.width, fireworksCanvas.height);
+                particles.forEach((p, i) => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.1;
+                    p.life--;
+                    if (p.life <= 0) particles.splice(i, 1);
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                    ctx.fill();
+                });
+                if (particles.length > 0) requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        function endGame(won) {
+            clearInterval(timer);
+            clearInterval(noteTimer);
+            clearInterval(eventTimer);
+            gameActive = false;
+            tracks = { U: [], S: [], A: [] };
+            updateTrack();
+            document.querySelectorAll('button').forEach(btn => btn.disabled = false);
+            asciiArt.textContent = baseScene;
+            message.textContent = won ? getRandomPhrase('win') : getRandomPhrase('lose');
+            timerDisplay.style.color = '#b22234';
+            comboDisplay.classList.remove('combo-active');
+
+            if (won && score > leaders[leaders.length - 1].score) {
+                const lang = languageSelect.value;
+                const name = prompt(lang === 'en' ? 'New high score! Enter your name:' : 'Новый рекорд! Введите ваше имя:', 'Player');
+                if (name) {
+                    leaders.push({ name, score });
+                    updateLeaderboard();
+                    launchFireworks();
+                }
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'u' || e.key === 'U') checkHit('U');
+            if (e.key === 's' || e.key === 'S') checkHit('S');
+            if (e.key === 'a' || e.key === 'A') checkHit('A');
+        });
+    </script>
+</body>
+</html>
